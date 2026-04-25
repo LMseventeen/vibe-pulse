@@ -16,6 +16,24 @@
 
 ---
 
+## 截图预览
+
+<table>
+  <tr>
+    <td align="center"><img src="static/png/1.png" width="280" /><br /><b>空闲状态</b><br />绿色圆点 —— 所有会话已完成</td>
+    <td align="center"><img src="static/png/3.png" width="280" /><br /><b>处理中</b><br />蓝色呼吸圆点 —— Claude 正在工作</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="static/png/4.png" width="280" /><br /><b>权限请求</b><br />橙色常驻卡片 —— 等待审批</td>
+    <td align="center"><img src="static/png/5.png" width="280" /><br /><b>任务完成</b><br />绿色卡片 —— 3 秒后自动收起</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="static/png/2.png" width="280" /><br /><b>通知时间线</b><br />点击刘海区域浏览近期事件</td>
+  </tr>
+</table>
+
+---
+
 ## 为什么需要 Vibe Pulse？
 
 用 Claude Code 进行 vibe coding 时，你经常在多任务之间切换 —— 查文档、看设计稿、或者去倒杯咖啡。与此同时，Claude 可能正在：

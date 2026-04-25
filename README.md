@@ -16,6 +16,24 @@ English | [中文](README_CN.md)
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="static/png/1.png" width="280" /><br /><b>Idle</b><br />Green dot — all sessions complete</td>
+    <td align="center"><img src="static/png/3.png" width="280" /><br /><b>Processing</b><br />Blue breathing dot — Claude is working</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="static/png/4.png" width="280" /><br /><b>Permission Request</b><br />Orange persistent card — waiting for approval</td>
+    <td align="center"><img src="static/png/5.png" width="280" /><br /><b>Task Completed</b><br />Green card — auto-closes in 3 seconds</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="static/png/2.png" width="280" /><br /><b>Notification Timeline</b><br />Click the notch to browse recent events</td>
+  </tr>
+</table>
+
+---
+
 ## Why Vibe Pulse?
 
 When vibe coding with Claude Code, you're often multitasking — browsing docs, reviewing designs, or grabbing coffee. Meanwhile, Claude might be:
