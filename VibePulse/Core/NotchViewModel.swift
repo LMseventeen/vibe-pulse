@@ -156,7 +156,11 @@ class NotchViewModel: ObservableObject {
         switch status {
         case .opened:
             if geometry.isPointOutsidePanel(location, size: openedSize) {
-                notchClose()
+                // Don't auto-close for permission requests — user must interact
+                let isPermissionCard = pulseState.currentCard?.event.type == .permissionRequest
+                if !isPermissionCard {
+                    notchClose()
+                }
                 repostClickAt(location)
             } else if geometry.notchScreenRect.contains(location) {
                 // Toggle between card and timeline
@@ -250,14 +254,17 @@ class NotchViewModel: ObservableObject {
 
     /// Show a notification card, auto-close after duration if specified
     func showNotification(card: NotificationCard) {
+        // Always cancel any existing auto-close timer first
+        autoCloseTimer?.cancel()
+        autoCloseTimer = nil
+
         if status != .opened {
             notchOpen(reason: .notification)
         }
         contentType = .card
 
-        // Auto-close for remind-level notifications
+        // Auto-close only for remind-level notifications (not alert/permission)
         if let duration = card.displayDuration {
-            autoCloseTimer?.cancel()
             let workItem = DispatchWorkItem { [weak self] in
                 guard let self = self, self.openReason == .notification else { return }
                 self.notchClose()
