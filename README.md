@@ -4,7 +4,7 @@
 
 **Smart Notification Center for Claude Code CLI**
 
-A macOS native app that turns your MacBook's notch into a Dynamic Island-style notification hub for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Get real-time alerts for test failures, build errors, permission requests, and task completions — without constantly watching your terminal.
+A macOS native app that turns your MacBook's notch into a Dynamic Island-style notification hub for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Get real-time alerts for permission requests and task completions — without constantly watching your terminal.
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
@@ -21,8 +21,8 @@ English | [中文](README_CN.md)
 When vibe coding with Claude Code, you're often multitasking — browsing docs, reviewing designs, or grabbing coffee. Meanwhile, Claude might be:
 
 - Waiting for your permission to run a command
-- Failing the same test for the 5th time
 - Done with a task and waiting for your next instruction
+- Asking you a question
 
 **Vibe Pulse watches Claude Code for you** and delivers just-in-time notifications through your MacBook's notch area, so you never miss what matters.
 
@@ -33,12 +33,10 @@ Automatically detects events from Claude Code sessions via the [hooks system](ht
 
 | Event | Detection Method |
 |---|---|
-| Test pass/fail | Regex analysis of stdout (pytest, Jest, XCTest, Go test, cargo test) |
-| Build errors | Exit code + compiler error pattern matching |
 | Permission requests | Claude Code `PermissionRequest` hook |
 | Task completion | Claude Code `Stop` hook |
 | Claude asking | `Notification` hook (idle prompt) |
-| Repeated failures | 3+ failures in 60s within the same session |
+| Test passed | Regex analysis of stdout (pytest, Jest, XCTest, Go test, cargo test) |
 
 ### Three-Tier Notification System
 
@@ -46,7 +44,7 @@ Automatically detects events from Claude Code sessions via the [hooks system](ht
 |---|---|---|---|
 | **Silent** | Record to timeline only | None | Tests passed |
 | **Remind** | Pop notch card, auto-close in 3s | Soft (Tink) | Task completed, Claude asking |
-| **Alert** | Persistent card until user acts | Strong (Sosumi) | Permission request, test/build failure |
+| **Alert** | Persistent card until user acts | Strong (Sosumi) | Permission request |
 
 ### Dynamic Status Indicator
 
@@ -57,7 +55,6 @@ The notch status dot changes color based on what's happening:
 | 🟢 Green | Idle / task completed |
 | 🔵 Blue | Claude is processing |
 | 🟠 Orange | Permission request waiting |
-| 🔴 Red | Test or build failure |
 | ⚪ Gray | No active sessions |
 
 ### Smart Notification Suppression
@@ -74,13 +71,11 @@ Track multiple Claude Code sessions simultaneously. Each session maintains its o
 
 ## Supported Environments
 
-**Test Frameworks:** pytest, Jest, Vitest, Mocha, XCTest, Go test, cargo test, RSpec, PHPUnit, and more (19 patterns)
-
-**Build Tools:** make, cmake, cargo, swift build, xcodebuild, gradle, gcc/g++/clang, tsc, and more (16 patterns)
-
 **Terminals:** Apple Terminal, iTerm2, Ghostty, Warp
 
 **Multiplexers:** tmux (auto-detects panes)
+
+**Test Frameworks (pass detection):** pytest, Jest, Vitest, Mocha, XCTest, Go test, cargo test, RSpec, PHPUnit, and more (19 patterns)
 
 ## Getting Started
 
@@ -159,7 +154,7 @@ vibe-pulse/
 │   ├── UI/                     # SwiftUI views, styles, components
 │   └── Resources/              # Hook script, assets
 ├── Tests/
-│   └── VibePulseTests/         # 78 tests across 4 test suites
+│   └── VibePulseTests/         # 69 tests across 4 test suites
 └── docs/
     ├── ARCHITECTURE.md
     └── PRD.md
@@ -171,8 +166,8 @@ vibe-pulse/
 swift test
 ```
 
-78 tests covering:
-- **BashOutputAnalyzer** — Stdout regex matching for all 5 test frameworks + build errors
+69 tests covering:
+- **BashOutputAnalyzer** — Stdout regex matching for 5 test frameworks
 - **EventClassifier** — Event type and notification level assignment
 - **NotificationQueue** — Deduplication, throttling, priority ordering
 - **PatternRules** — Test/build command recognition (19 test + 16 build patterns)

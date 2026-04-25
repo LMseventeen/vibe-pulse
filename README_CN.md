@@ -4,7 +4,7 @@
 
 **Claude Code CLI 智能通知中心**
 
-一款 macOS 原生应用，将你的 MacBook 刘海屏变成灵动岛风格的 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 通知中心。实时推送测试失败、构建报错、权限请求和任务完成通知 —— 无需时刻盯着终端。
+一款 macOS 原生应用，将你的 MacBook 刘海屏变成灵动岛风格的 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 通知中心。实时推送权限请求和任务完成通知 —— 无需时刻盯着终端。
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
@@ -21,8 +21,8 @@
 用 Claude Code 进行 vibe coding 时，你经常在多任务之间切换 —— 查文档、看设计稿、或者去倒杯咖啡。与此同时，Claude 可能正在：
 
 - 等你批准一个命令的执行权限
-- 第 5 次跑同一个失败的测试
 - 完成了任务，等你下一步指令
+- 向你提问
 
 **Vibe Pulse 替你盯着 Claude Code**，通过 MacBook 刘海区域即时推送通知，让你不错过任何重要事件。
 
@@ -34,12 +34,10 @@
 
 | 事件 | 检测方式 |
 |---|---|
-| 测试通过/失败 | 正则分析 stdout（pytest、Jest、XCTest、Go test、cargo test） |
-| 构建报错 | 退出码 + 编译器错误模式匹配 |
 | 权限请求 | Claude Code `PermissionRequest` Hook |
 | 任务完成 | Claude Code `Stop` Hook |
 | Claude 提问 | `Notification` Hook（等待输入） |
-| 重复失败 | 同一会话 60 秒内 3 次以上失败 |
+| 测试通过 | 正则分析 stdout（pytest、Jest、XCTest、Go test、cargo test） |
 
 ### 三级通知体系
 
@@ -47,7 +45,7 @@
 |---|---|---|---|
 | **静默** | 仅记录到时间线 | 无 | 测试通过 |
 | **提醒** | 弹出卡片，3 秒自动收起 | 轻提示音 (Tink) | 任务完成、Claude 提问 |
-| **警告** | 常驻卡片，直到用户操作 | 强提示音 (Sosumi) | 权限请求、测试/构建失败 |
+| **警告** | 常驻卡片，直到用户操作 | 强提示音 (Sosumi) | 权限请求 |
 
 ### 动态状态指示灯
 
@@ -58,7 +56,6 @@
 | 🟢 绿色 | 空闲 / 任务完成 |
 | 🔵 蓝色 | Claude 正在处理 |
 | 🟠 橙色 | 等待权限审批 |
-| 🔴 红色 | 测试或构建失败 |
 | ⚪ 灰色 | 无活跃会话 |
 
 ### 智能免打扰
@@ -75,13 +72,11 @@
 
 ## 支持环境
 
-**测试框架：** pytest、Jest、Vitest、Mocha、XCTest、Go test、cargo test、RSpec、PHPUnit 等（19 种模式）
-
-**构建工具：** make、cmake、cargo、swift build、xcodebuild、gradle、gcc/g++/clang、tsc 等（16 种模式）
-
 **终端：** Apple Terminal、iTerm2、Ghostty、Warp
 
 **终端复用器：** tmux（自动检测面板）
+
+**测试框架（通过检测）：** pytest、Jest、Vitest、Mocha、XCTest、Go test、cargo test、RSpec、PHPUnit 等（19 种模式）
 
 ## 快速开始
 
@@ -160,7 +155,7 @@ vibe-pulse/
 │   ├── UI/                     # SwiftUI 视图、样式、组件
 │   └── Resources/              # Hook 脚本、资源文件
 ├── Tests/
-│   └── VibePulseTests/         # 78 个测试，4 个测试套件
+│   └── VibePulseTests/         # 69 个测试，4 个测试套件
 └── docs/
     ├── ARCHITECTURE.md
     └── PRD.md
@@ -172,8 +167,8 @@ vibe-pulse/
 swift test
 ```
 
-78 个测试覆盖：
-- **BashOutputAnalyzer** —— 5 种测试框架 + 构建错误的 stdout 正则匹配
+69 个测试覆盖：
+- **BashOutputAnalyzer** —— 5 种测试框架的 stdout 正则匹配
 - **EventClassifier** —— 事件类型与通知级别分配
 - **NotificationQueue** —— 去重、节流、优先级排序
 - **PatternRules** —— 测试/构建命令识别（19 种测试 + 16 种构建模式）
