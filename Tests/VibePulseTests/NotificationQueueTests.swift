@@ -20,9 +20,9 @@ struct NotificationQueueTests {
     }
 
     private func makeEvent(
-        type: PulseEventType = .testFailed,
+        type: PulseEventType = .permissionRequest,
         sessionId: String = "session-1",
-        summary: String = "Test failed",
+        summary: String = "Permission: Bash",
         level: NotificationLevel = .alert,
         timestamp: Date = Date()
     ) -> PulseEvent {
@@ -51,7 +51,7 @@ struct NotificationQueueTests {
 
         let dequeued = await queue.dequeue()
         #expect(dequeued != nil)
-        #expect(dequeued?.event.type == .testFailed)
+        #expect(dequeued?.event.type == .permissionRequest)
 
         let afterCount = await queue.pendingCount
         #expect(afterCount == 0)
@@ -96,7 +96,7 @@ struct NotificationQueueTests {
         let queue = freshQueue()
 
         let event1 = makeEvent(summary: "3 tests failed", level: .alert)
-        let event2 = makeEvent(type: .buildFailed, summary: "Build error on line 42", level: .alert)
+        let event2 = makeEvent(type: .claudeAsking, summary: "What should I do next?", level: .remind)
 
         _ = await queue.enqueue(event1)
         _ = await queue.enqueue(event2)
@@ -124,9 +124,9 @@ struct NotificationQueueTests {
 
         // Enqueue alert second
         let alertEvent = makeEvent(
-            type: .testFailed,
+            type: .permissionRequest,
             sessionId: "s-alert",
-            summary: "Tests failed",
+            summary: "Permission: Bash",
             level: .alert,
             timestamp: now.addingTimeInterval(1)
         )

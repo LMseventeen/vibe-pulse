@@ -33,34 +33,13 @@ struct BashOutputAnalyzerTests {
         #expect(summary.contains("passed"))
     }
 
-    @Test("pytest failed output returns testFailed")
-    func test_pytest_failedOutput_returnsTestFailed() async {
+    @Test("pytest with failures returns nil")
+    func test_pytest_failedOutput_returnsNil() async {
         let output = """
-        ============================= test session starts =============================
-        FAILED tests/test_core.py::test_login - AssertionError
-
         ============================== 3 failed, 2 passed in 1.50s ==============================
         """
         let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed(let summary) = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("failed") || summary.contains("FAILED"))
-    }
-
-    @Test("pytest ERROR line returns testFailed")
-    func test_pytest_errorLine_returnsTestFailed() async {
-        let output = """
-        ============================= test session starts =============================
-        ERROR tests/test_core.py - ModuleNotFoundError
-        ============================== 1 error in 0.03s ==============================
-        """
-        let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
+        #expect(signal == nil)
     }
 
     // MARK: - Jest
@@ -80,19 +59,13 @@ struct BashOutputAnalyzerTests {
         #expect(summary.contains("passed"))
     }
 
-    @Test("Jest failed output returns testFailed")
-    func test_jest_failedOutput_returnsTestFailed() async {
+    @Test("Jest with failures returns nil")
+    func test_jest_failedOutput_returnsNil() async {
         let output = """
-        FAIL src/__tests__/App.test.js
         Tests:  1 failed, 5 passed, 6 total
-        Time:   2.456 s
         """
         let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed(let summary) = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("failed"))
+        #expect(signal == nil)
     }
 
     // MARK: - XCTest
@@ -113,20 +86,14 @@ struct BashOutputAnalyzerTests {
         #expect(summary.contains("passed"))
     }
 
-    @Test("XCTest failed output returns testFailed")
-    func test_xctest_failedOutput_returnsTestFailed() async {
+    @Test("XCTest with failures returns nil")
+    func test_xctest_failedOutput_returnsNil() async {
         let output = """
-        Test Suite 'All tests' started at 2024-01-15 10:00:00.
-        Test Case '-[MyTests testExample]' failed (0.002 seconds).
         Test Suite 'MyTests' failed at 2024-01-15 10:00:01.
              Executed 1 test, with 1 failure in 0.002 seconds
         """
         let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed(let summary) = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("failed"))
+        #expect(signal == nil)
     }
 
     // MARK: - Go test
@@ -147,20 +114,14 @@ struct BashOutputAnalyzerTests {
         #expect(summary.contains("ok") || summary.contains("passed") || summary.contains("PASS"))
     }
 
-    @Test("Go test failed output returns testFailed")
-    func test_goTest_failedOutput_returnsTestFailed() async {
+    @Test("Go test with failures returns nil")
+    func test_goTest_failedOutput_returnsNil() async {
         let output = """
-        === RUN   TestAdd
         --- FAIL: TestAdd (0.00s)
-            main_test.go:10: expected 4, got 3
         FAIL    mypackage    0.003s
         """
         let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed(let summary) = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("FAIL"))
+        #expect(signal == nil)
     }
 
     // MARK: - cargo test
@@ -183,73 +144,13 @@ struct BashOutputAnalyzerTests {
         #expect(summary.contains("ok") || summary.contains("passed"))
     }
 
-    @Test("cargo test failed output returns testFailed")
-    func test_cargoTest_failedOutput_returnsTestFailed() async {
+    @Test("cargo test with failures returns nil")
+    func test_cargoTest_failedOutput_returnsNil() async {
         let output = """
-        running 2 tests
-        test tests::test_add ... ok
-        test tests::test_sub ... FAILED
-
         test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out
         """
         let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .testFailed(let summary) = signal else {
-            Issue.record("Expected testFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("FAILED") || summary.contains("failed"))
-    }
-
-    // MARK: - Build failures
-
-    @Test("BUILD FAILED keyword returns buildFailed")
-    func test_build_buildFailedKeyword_returnsBuildFailed() async {
-        let output = """
-        Compiling src/main.swift...
-        BUILD FAILED
-        """
-        let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .buildFailed(let summary) = signal else {
-            Issue.record("Expected buildFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("BUILD FAILED"))
-    }
-
-    @Test("Compiler error pattern returns buildFailed")
-    func test_build_compilerError_returnsBuildFailed() async {
-        let output = """
-        /Users/dev/main.swift:10:5: error: use of unresolved identifier 'foo'
-        """
-        let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .buildFailed(let summary) = signal else {
-            Issue.record("Expected buildFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("error:"))
-    }
-
-    @Test("fatal error returns buildFailed")
-    func test_build_fatalError_returnsBuildFailed() async {
-        let output = "fatal error: 'stdio.h' file not found"
-        let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .buildFailed = signal else {
-            Issue.record("Expected buildFailed, got \(String(describing: signal))")
-            return
-        }
-    }
-
-    @Test("Rust compiler error returns buildFailed")
-    func test_build_rustError_returnsBuildFailed() async {
-        let output = """
-        error[E0308]: mismatched types
-          --> src/main.rs:4:5
-        """
-        let signal = await analyzer.analyze(stdout: output, exitCode: 1, toolName: "Bash")
-        guard case .buildFailed = signal else {
-            Issue.record("Expected buildFailed, got \(String(describing: signal))")
-            return
-        }
+        #expect(signal == nil)
     }
 
     // MARK: - Irrelevant output
@@ -285,20 +186,16 @@ struct BashOutputAnalyzerTests {
         #expect(signal == nil)
     }
 
-    @Test("Nil stdout returns nil when exit code 0")
-    func test_edge_nilStdout_exitZero_returnsNil() async {
+    @Test("Nil stdout returns nil")
+    func test_edge_nilStdout_returnsNil() async {
         let signal = await analyzer.analyze(stdout: nil, exitCode: 0, toolName: "Bash")
         #expect(signal == nil)
     }
 
-    @Test("Nil stdout with non-zero exit code returns buildFailed")
-    func test_edge_nilStdout_nonZeroExit_returnsBuildFailed() async {
+    @Test("Nil stdout with non-zero exit code returns nil")
+    func test_edge_nilStdout_nonZeroExit_returnsNil() async {
         let signal = await analyzer.analyze(stdout: nil, exitCode: 1, toolName: "Bash")
-        guard case .buildFailed(let summary) = signal else {
-            Issue.record("Expected buildFailed, got \(String(describing: signal))")
-            return
-        }
-        #expect(summary.contains("code 1"))
+        #expect(signal == nil)
     }
 
     @Test("Very long output still matches patterns")

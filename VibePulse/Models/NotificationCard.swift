@@ -37,10 +37,7 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
     var icon: String {
         switch event.type {
         case .testPassed:        return "checkmark.circle.fill"
-        case .testFailed:        return "xmark.circle.fill"
-        case .buildFailed:       return "hammer.circle.fill"
         case .taskCompleted:     return "checkmark.seal.fill"
-        case .repeatedFailure:   return "exclamationmark.triangle.fill"
         case .claudeAsking:      return "questionmark.bubble.fill"
         case .permissionRequest: return "lock.shield.fill"
         }
@@ -49,10 +46,7 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
     var iconColor: Color {
         switch event.type {
         case .testPassed:        return .green
-        case .testFailed:        return .red
-        case .buildFailed:       return .red
         case .taskCompleted:     return .green
-        case .repeatedFailure:   return .orange
         case .claudeAsking:      return .blue
         case .permissionRequest: return .orange
         }
@@ -61,10 +55,7 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
     var title: String {
         switch event.type {
         case .testPassed:        return "Tests Passed"
-        case .testFailed:        return "Tests Failed"
-        case .buildFailed:       return "Build Failed"
         case .taskCompleted:     return "Task Completed"
-        case .repeatedFailure:   return "Repeated Failure"
         case .claudeAsking:      return "Claude Asking"
         case .permissionRequest: return "Permission Required"
         }

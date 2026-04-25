@@ -14,7 +14,6 @@ struct EventClassifierTests {
 
     // MARK: - Helpers
 
-    /// Create a minimal HookEvent for testing
     private func makeHookEvent(
         sessionId: String = "test-session",
         cwd: String = "/tmp/project",
@@ -46,7 +45,6 @@ struct EventClassifierTests {
             "tool_error": toolError,
             "stop_error": stopError,
         ]
-        // Filter out nil values and encode
         let filtered = json.compactMapValues { $0 }
         let data = try! JSONSerialization.data(withJSONObject: filtered)
         return try! JSONDecoder().decode(HookEvent.self, from: data)
@@ -86,40 +84,6 @@ struct EventClassifierTests {
         #expect(result?.level == .silent)
     }
 
-    // MARK: - Test Failed
-
-    @Test("testFailed from bash signal has alert level")
-    func test_testFailed_bashSignal_alertLevel() async {
-        let classifier = EventClassifier.shared
-        let hook = makeHookEvent(event: "PostToolUse", tool: "Bash")
-        let session = makeSession()
-        let raw = makeRawEvent(hookEvent: hook, bashSignal: .testFailed(summary: "3 failed"))
-
-        let result = await classifier.classify(raw, session: session)
-        #expect(result != nil)
-        #expect(result?.type == .testFailed || result?.type == .repeatedFailure)
-        if result?.type == .testFailed {
-            #expect(result?.level == .alert)
-        }
-    }
-
-    // MARK: - Build Failed
-
-    @Test("buildFailed from bash signal has alert level")
-    func test_buildFailed_bashSignal_alertLevel() async {
-        let classifier = EventClassifier.shared
-        let hook = makeHookEvent(event: "PostToolUse", tool: "Bash")
-        let session = makeSession()
-        let raw = makeRawEvent(hookEvent: hook, bashSignal: .buildFailed(summary: "BUILD FAILED"))
-
-        let result = await classifier.classify(raw, session: session)
-        #expect(result != nil)
-        #expect(result?.type == .buildFailed || result?.type == .repeatedFailure)
-        if result?.type == .buildFailed {
-            #expect(result?.level == .alert)
-        }
-    }
-
     // MARK: - Task Completed (Stop)
 
     @Test("Stop event classified as taskCompleted with remind level")
@@ -151,7 +115,7 @@ struct EventClassifierTests {
         #expect(result?.summary.contains("API rate limit") == true)
     }
 
-    // MARK: - Claude Asking (Notification idle_prompt)
+    // MARK: - Claude Asking
 
     @Test("Notification idle_prompt classified as claudeAsking with remind level")
     func test_notification_idlePrompt_claudeAsking_remindLevel() async {
@@ -188,60 +152,6 @@ struct EventClassifierTests {
         #expect(result != nil)
         #expect(result?.type == .permissionRequest)
         #expect(result?.level == .alert)
-    }
-
-    // MARK: - Repeated Failure Detection
-
-    @Test("3 failures in 60s triggers repeatedFailure")
-    func test_repeatedFailure_threeInWindow_triggersRepeatedFailure() async {
-        // Use a fresh classifier to avoid interference from other tests.
-        // Since EventClassifier is a singleton actor, we test the behavior
-        // with a unique session id to isolate state.
-        let classifier = EventClassifier.shared
-        let uniqueSession = "repeated-failure-\(UUID().uuidString)"
-        let session = makeSession(sessionId: uniqueSession, projectName: "TestProject")
-        let now = Date()
-
-        for i in 0..<3 {
-            let hook = makeHookEvent(sessionId: uniqueSession, event: "PostToolUse", tool: "Bash")
-            let raw = makeRawEvent(
-                hookEvent: hook,
-                bashSignal: .testFailed(summary: "Test \(i) failed"),
-                timestamp: now.addingTimeInterval(Double(i) * 5)
-            )
-            let result = await classifier.classify(raw, session: session)
-
-            if i < 2 {
-                // First two should be testFailed
-                #expect(result?.type == .testFailed, "Iteration \(i): expected testFailed")
-            } else {
-                // Third should trigger repeatedFailure
-                #expect(result?.type == .repeatedFailure, "Iteration \(i): expected repeatedFailure, got \(String(describing: result?.type))")
-                #expect(result?.level == .alert)
-            }
-        }
-    }
-
-    // MARK: - Different sessions don't interfere
-
-    @Test("Failures in different sessions do not trigger repeatedFailure")
-    func test_repeatedFailure_differentSessions_noInterference() async {
-        let classifier = EventClassifier.shared
-        let now = Date()
-
-        for i in 0..<3 {
-            let sid = "isolated-session-\(UUID().uuidString)"
-            let session = makeSession(sessionId: sid, projectName: "Project\(i)")
-            let hook = makeHookEvent(sessionId: sid, event: "PostToolUse", tool: "Bash")
-            let raw = makeRawEvent(
-                hookEvent: hook,
-                bashSignal: .testFailed(summary: "Test failed"),
-                timestamp: now.addingTimeInterval(Double(i))
-            )
-            let result = await classifier.classify(raw, session: session)
-            // Each is from a unique session, so none should be repeatedFailure
-            #expect(result?.type == .testFailed, "Session \(i): expected testFailed, got \(String(describing: result?.type))")
-        }
     }
 
     // MARK: - Unhandled events

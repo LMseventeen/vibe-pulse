@@ -38,13 +38,12 @@ struct StatusIndicatorView: View {
         case .processing: return PulseColors.processing
         case .idle:       return PulseColors.idle
         case .waiting:    return PulseColors.waiting
-        case .error:      return PulseColors.alert
         }
     }
 
     private var shouldAnimate: Bool {
         switch status {
-        case .processing, .waiting, .error: return true
+        case .processing, .waiting: return true
         case .inactive, .idle: return false
         }
     }

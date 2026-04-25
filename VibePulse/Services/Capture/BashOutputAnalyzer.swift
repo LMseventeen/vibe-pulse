@@ -2,8 +2,8 @@
 //  BashOutputAnalyzer.swift
 //  VibePulse
 //
-//  Regex-based analysis of Bash tool stdout to extract test/build signals
-//  Covers: pytest, Jest, XCTest, Go test, cargo test, and generic build errors
+//  Regex-based analysis of Bash tool stdout to extract test pass signals
+//  Covers: pytest, Jest, XCTest, Go test, cargo test
 //
 
 import Foundation
@@ -16,20 +16,15 @@ actor BashOutputAnalyzer {
     /// Analyze bash output and return a structured signal (if any match)
     func analyze(stdout: String?, exitCode: Int?, toolName: String?) -> BashSignal? {
         guard let stdout = stdout, !stdout.isEmpty else {
-            // Only exit code available
-            if let code = exitCode, code != 0 {
-                return .buildFailed(summary: "Process exited with code \(code)")
-            }
             return nil
         }
 
-        // Check test frameworks first (order matters: most specific first)
+        // Check test frameworks (order matters: most specific first)
         if let signal = matchPytest(stdout) { return signal }
         if let signal = matchJest(stdout) { return signal }
         if let signal = matchXCTest(stdout) { return signal }
         if let signal = matchGoTest(stdout) { return signal }
         if let signal = matchCargoTest(stdout) { return signal }
-        if let signal = matchGenericBuild(stdout, exitCode: exitCode) { return signal }
 
         return nil
     }
@@ -37,23 +32,13 @@ actor BashOutputAnalyzer {
     // MARK: - pytest
 
     private func matchPytest(_ output: String) -> BashSignal? {
-        // pytest summary: "5 passed", "3 failed, 2 passed", "FAILED", "ERROR"
         let passPattern = #"(\d+)\s+passed"#
         let failPattern = #"([1-9]\d*)\s+failed"#
-        let errorPattern = #"(?:^|\n)\s*(?:FAILED|ERROR)\s"#
 
         let hasPassed = output.range(of: passPattern, options: .regularExpression) != nil
-        let failMatch = output.range(of: failPattern, options: .regularExpression)
-        let hasError = output.range(of: errorPattern, options: .regularExpression) != nil
+        let hasFailed = output.range(of: failPattern, options: .regularExpression) != nil
 
-        if failMatch != nil || hasError {
-            let summary = extractLine(matching: #"=+.*(?:FAILED|ERROR|failed).*=+"#, from: output)
-                ?? extractLine(matching: failPattern, from: output)
-                ?? "Tests failed"
-            return .testFailed(summary: summary)
-        }
-
-        if hasPassed {
+        if hasPassed && !hasFailed {
             let summary = extractLine(matching: #"=+.*passed.*=+"#, from: output)
                 ?? extractLine(matching: passPattern, from: output)
                 ?? "Tests passed"
@@ -66,7 +51,6 @@ actor BashOutputAnalyzer {
     // MARK: - Jest
 
     private func matchJest(_ output: String) -> BashSignal? {
-        // Jest summary: "Tests:  1 failed, 5 passed, 6 total"
         let jestSummary = #"Tests:\s+(?:(\d+)\s+failed,\s*)?(\d+)\s+passed"#
 
         guard output.range(of: jestSummary, options: .regularExpression) != nil else {
@@ -75,8 +59,7 @@ actor BashOutputAnalyzer {
 
         let failPattern = #"Tests:\s+(\d+)\s+failed"#
         if output.range(of: failPattern, options: .regularExpression) != nil {
-            let summary = extractLine(matching: #"Tests:.*failed.*"#, from: output) ?? "Tests failed"
-            return .testFailed(summary: summary)
+            return nil  // Has failures, skip
         }
 
         let summary = extractLine(matching: #"Tests:.*passed.*"#, from: output) ?? "Tests passed"
@@ -90,8 +73,7 @@ actor BashOutputAnalyzer {
         let failPattern = #"Test Suite '.*' failed"#
 
         if output.range(of: failPattern, options: .regularExpression) != nil {
-            let summary = extractLine(matching: failPattern, from: output) ?? "Tests failed"
-            return .testFailed(summary: summary)
+            return nil  // Has failures, skip
         }
 
         if output.range(of: passPattern, options: .regularExpression) != nil {
@@ -109,11 +91,9 @@ actor BashOutputAnalyzer {
         let failPattern = #"(?m)^FAIL\s+\S+"#
 
         if output.range(of: failPattern, options: .regularExpression) != nil {
-            let summary = extractLine(matching: failPattern, from: output) ?? "Tests failed"
-            return .testFailed(summary: summary)
+            return nil  // Has failures, skip
         }
 
-        // "PASS" at end of output or "ok" lines
         if output.range(of: passPattern, options: .regularExpression) != nil
             || output.contains("PASS") {
             let summary = extractLine(matching: passPattern, from: output) ?? "Tests passed"
@@ -130,40 +110,12 @@ actor BashOutputAnalyzer {
         let failPattern = #"test result: FAILED\."#
 
         if output.range(of: failPattern, options: .regularExpression) != nil {
-            let summary = extractLine(matching: failPattern, from: output) ?? "Tests failed"
-            return .testFailed(summary: summary)
+            return nil  // Has failures, skip
         }
 
         if output.range(of: passPattern, options: .regularExpression) != nil {
             let summary = extractLine(matching: passPattern, from: output) ?? "Tests passed"
             return .testPassed(summary: summary)
-        }
-
-        return nil
-    }
-
-    // MARK: - Generic build errors
-
-    private func matchGenericBuild(_ output: String, exitCode: Int?) -> BashSignal? {
-        let buildFailPatterns = [
-            #"(?i)BUILD FAILED"#,
-            #"(?i)compilation error"#,
-            #"(?i)fatal error:"#,
-            #"error\[E\d+\]:"#,  // Rust compiler errors
-        ]
-
-        for pattern in buildFailPatterns {
-            if output.range(of: pattern, options: .regularExpression) != nil {
-                let summary = extractLine(matching: pattern, from: output) ?? "Build failed"
-                return .buildFailed(summary: summary)
-            }
-        }
-
-        // Swift/Clang specific: "error:" at line start (common compiler pattern)
-        let compilerErrorPattern = #"^\S+:\d+:\d+: error:"#
-        if output.range(of: compilerErrorPattern, options: .regularExpression) != nil {
-            let summary = extractLine(matching: compilerErrorPattern, from: output) ?? "Compilation error"
-            return .buildFailed(summary: summary)
         }
 
         return nil

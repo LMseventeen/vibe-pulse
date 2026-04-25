@@ -67,23 +67,13 @@ struct NotificationCardView: View {
     }
 
     private var borderColor: Color {
-        switch card.event.type {
-        case .permissionRequest:
-            return Color.orange.opacity(0.4)
-        case .testFailed, .buildFailed, .repeatedFailure:
-            return Color.red.opacity(0.4)
-        default:
-            return PulseColors.cardBorder
-        }
+        card.event.type == .permissionRequest
+            ? Color.orange.opacity(0.4)
+            : PulseColors.cardBorder
     }
 
     private var borderWidth: CGFloat {
-        switch card.event.type {
-        case .permissionRequest, .testFailed, .buildFailed, .repeatedFailure:
-            return 1
-        default:
-            return 0.5
-        }
+        card.event.type == .permissionRequest ? 1 : 0.5
     }
 
     private var displaySummary: String {

@@ -285,13 +285,8 @@ actor PulseStore {
     private func computeAggregateStatus(sessions: [SessionState]) -> AggregateStatus {
         // Current card takes priority for status dot color
         if let card = currentCard {
-            switch card.event.type {
-            case .permissionRequest:
+            if card.event.type == .permissionRequest {
                 return .waiting   // orange
-            case .testFailed, .buildFailed, .repeatedFailure:
-                return .error     // red
-            default:
-                break  // fall through to session-based logic
             }
         }
 

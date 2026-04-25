@@ -25,10 +25,7 @@ struct EventIcon: View {
     private var iconName: String {
         switch eventType {
         case .testPassed:        return "checkmark.circle.fill"
-        case .testFailed:        return "xmark.circle.fill"
-        case .buildFailed:       return "hammer.circle.fill"
         case .taskCompleted:     return "checkmark.seal.fill"
-        case .repeatedFailure:   return "exclamationmark.triangle.fill"
         case .claudeAsking:      return "questionmark.bubble.fill"
         case .permissionRequest: return "lock.shield.fill"
         }
@@ -37,10 +34,7 @@ struct EventIcon: View {
     private var iconColor: Color {
         switch eventType {
         case .testPassed:        return PulseColors.success
-        case .testFailed:        return PulseColors.error
-        case .buildFailed:       return PulseColors.error
-        case .taskCompleted:     return PulseColors.info
-        case .repeatedFailure:   return PulseColors.warning
+        case .taskCompleted:     return PulseColors.success
         case .claudeAsking:      return PulseColors.info
         case .permissionRequest: return PulseColors.warning
         }

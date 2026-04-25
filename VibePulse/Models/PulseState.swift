@@ -13,7 +13,6 @@ enum AggregateStatus: Equatable, Sendable {
     case processing    // At least one session processing (blue)
     case idle          // All sessions idle/waiting (green)
     case waiting       // Waiting for permission (orange)
-    case error         // Recent alert-level failure (red)
 }
 
 struct PulseState: Equatable, Sendable {

@@ -7,13 +7,10 @@
 
 import Foundation
 
-/// The 7 event types Vibe Pulse tracks
+/// Event types Vibe Pulse tracks
 enum PulseEventType: String, Codable, Sendable {
     case testPassed         // Tests passed
-    case testFailed         // Tests failed
-    case buildFailed        // Build/compilation failed
     case taskCompleted      // Claude finished (Stop event)
-    case repeatedFailure    // Same failure >= 3 times in 60s
     case claudeAsking       // Claude asking user a question
     case permissionRequest  // Tool needs permission
 }
