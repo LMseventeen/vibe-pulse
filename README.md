@@ -10,6 +10,9 @@ A macOS native app that turns your MacBook's notch into a Dynamic Island-style n
 [![Platform](https://img.shields.io/badge/Platform-macOS%2015+-blue.svg)](https://www.apple.com/macos/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+English | [中文](README_CN.md)
+
+<img width="600" alt="Vibe Pulse Demo" src="docs/assets/demo.png">
 
 </div>
 
