@@ -170,12 +170,10 @@ vibe-pulse/
 │   │   ├── State/              # PulseStore (central state actor)
 │   │   └── Terminal/           # Terminal focus, tmux, process tree
 │   ├── UI/                     # SwiftUI views, styles, components
+│   ├── Utilities/              # Terminal visibility detection
 │   └── Resources/              # Hook script, assets
-├── Tests/
-│   └── VibePulseTests/         # 69 tests across 4 test suites
-└── docs/
-    ├── ARCHITECTURE.md
-    └── PRD.md
+└── Tests/
+    └── VibePulseTests/         # 69 tests across 4 test suites
 ```
 
 ## Tests
@@ -192,7 +190,7 @@ swift test
 
 ## Inspired By
 
-[Vibe Notch](https://github.com/LMseventeen/vibe-notch) — The original MacBook notch overlay for Claude Code permission alerts. Vibe Pulse extends the concept from permission-only to a full notification center.
+Inspired by [Vibe Notch](https://github.com/LMseventeen/vibe-notch). Vibe Pulse extends the concept from permission-only alerts to a full smart notification center for Claude Code.
 
 ## License
 

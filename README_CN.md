@@ -171,12 +171,10 @@ vibe-pulse/
 │   │   ├── State/              # PulseStore（中心状态 Actor）
 │   │   └── Terminal/           # 终端聚焦、tmux、进程树
 │   ├── UI/                     # SwiftUI 视图、样式、组件
+│   ├── Utilities/              # 终端可见性检测
 │   └── Resources/              # Hook 脚本、资源文件
-├── Tests/
-│   └── VibePulseTests/         # 69 个测试，4 个测试套件
-└── docs/
-    ├── ARCHITECTURE.md
-    └── PRD.md
+└── Tests/
+    └── VibePulseTests/         # 69 个测试，4 个测试套件
 ```
 
 ## 测试
@@ -193,7 +191,7 @@ swift test
 
 ## 灵感来源
 
-[Vibe Notch](https://github.com/LMseventeen/vibe-notch) —— 最初的 MacBook 刘海 Claude Code 权限弹窗工具。Vibe Pulse 将其从仅权限通知扩展为完整的智能通知中心。
+灵感来自 [Vibe Notch](https://github.com/LMseventeen/vibe-notch)。Vibe Pulse 将其从仅权限弹窗扩展为完整的 Claude Code 智能通知中心。
 
 ## 许可证
 
