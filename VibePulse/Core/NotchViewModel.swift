@@ -151,6 +151,9 @@ class NotchViewModel: ObservableObject {
     }
 
     private func handleMouseDown() {
+        // Skip synthetic (reposted) click events to prevent an infinite loop
+        // where reposted clicks re-enter the global monitor and trigger more reposts.
+        guard !isRepostingClick else { return }
         let location = NSEvent.mouseLocation
 
         switch status {
@@ -177,9 +180,13 @@ class NotchViewModel: ObservableObject {
         }
     }
 
+    /// Flag to suppress the global event monitor while a synthetic click is in flight.
+    private var isRepostingClick = false
+
     private func repostClickAt(_ location: CGPoint) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            guard let screen = NSScreen.main else { return }
+        isRepostingClick = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self, let screen = NSScreen.main else { return }
             let screenHeight = screen.frame.height
             let cgPoint = CGPoint(x: location.x, y: screenHeight - location.y)
 
@@ -199,6 +206,12 @@ class NotchViewModel: ObservableObject {
                 mouseButton: .left
             ) {
                 mouseUp.post(tap: .cghidEventTap)
+            }
+
+            // Clear the flag after a short delay to allow the synthetic events
+            // to pass through the system before re-enabling monitor processing.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.isRepostingClick = false
             }
         }
     }
