@@ -26,15 +26,11 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
             self.displayDuration = nil
             self.actions = []
         case .remind:
-            self.displayDuration = 5.0
-            self.actions = [.jumpToTerminal, .dismiss]
+            self.displayDuration = 3.0
+            self.actions = [.jumpToTerminal]
         case .alert:
-            self.displayDuration = nil  // Persistent
-            if event.type == .permissionRequest {
-                self.actions = [.approve, .deny, .jumpToTerminal]
-            } else {
-                self.actions = [.jumpToTerminal, .dismiss]
-            }
+            self.displayDuration = nil  // Persistent until user clicks
+            self.actions = [.jumpToTerminal]
         }
     }
 
@@ -55,7 +51,7 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
         case .testPassed:        return .green
         case .testFailed:        return .red
         case .buildFailed:       return .red
-        case .taskCompleted:     return .blue
+        case .taskCompleted:     return .green
         case .repeatedFailure:   return .orange
         case .claudeAsking:      return .blue
         case .permissionRequest: return .orange
@@ -78,6 +74,4 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
 enum CardAction: Equatable, Sendable {
     case jumpToTerminal
     case dismiss
-    case approve
-    case deny
 }

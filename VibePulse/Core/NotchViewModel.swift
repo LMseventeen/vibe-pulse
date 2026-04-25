@@ -210,7 +210,10 @@ class NotchViewModel: ObservableObject {
         status = .opened
         contentType = .card
 
-        // When opening, try to pull the next card from the queue if none is showing
+        // Only try to pull cards when user manually opens (click/hover),
+        // NOT when triggered by a notification — the caller already handles card display.
+        guard reason == .click || reason == .hover else { return }
+
         if pulseState.currentCard == nil {
             Task {
                 if let next = await PulseStore.shared.dequeueNextCard() {

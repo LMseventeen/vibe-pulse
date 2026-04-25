@@ -13,6 +13,22 @@ private let logger = Logger(subsystem: "com.vibepulse", category: "TerminalFocus
 
 enum TerminalFocusHelper {
 
+    /// Bundle IDs of known terminal apps
+    static let terminalBundleIds: Set<String> = [
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",
+        "com.mitchellh.ghostty",
+        "dev.warp.Warp-Stable",
+    ]
+
+    /// Check if a terminal app is currently the frontmost (active) application
+    @MainActor
+    static func isTerminalFocused() -> Bool {
+        guard let frontmost = NSWorkspace.shared.frontmostApplication,
+              let bundleId = frontmost.bundleIdentifier else { return false }
+        return terminalBundleIds.contains(bundleId)
+    }
+
     /// Jump to the terminal for a given session
     static func jumpToTerminal(session: SessionState) async {
         // 1. Try tmux jump
@@ -47,14 +63,6 @@ enum TerminalFocusHelper {
 
     @MainActor
     private static func activateTerminalApp() {
-        // Try common terminal apps in order of preference
-        let terminalBundleIds = [
-            "com.apple.Terminal",
-            "com.googlecode.iterm2",
-            "com.mitchellh.ghostty",
-            "dev.warp.Warp-Stable",
-        ]
-
         let runningApps = NSWorkspace.shared.runningApplications
         for bundleId in terminalBundleIds {
             if let app = runningApps.first(where: { $0.bundleIdentifier == bundleId }) {

@@ -173,8 +173,8 @@ struct EventClassifierTests {
 
     // MARK: - Permission Request
 
-    @Test("PermissionRequest classified as permissionRequest with remind level")
-    func test_permissionRequest_remindLevel() async {
+    @Test("PermissionRequest classified as permissionRequest with alert level")
+    func test_permissionRequest_alertLevel() async {
         let classifier = EventClassifier.shared
         let hook = makeHookEvent(
             event: "PermissionRequest",
@@ -187,7 +187,7 @@ struct EventClassifierTests {
         let result = await classifier.classify(raw, session: session)
         #expect(result != nil)
         #expect(result?.type == .permissionRequest)
-        #expect(result?.level == .remind)
+        #expect(result?.level == .alert)
     }
 
     // MARK: - Repeated Failure Detection

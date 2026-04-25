@@ -11,8 +11,6 @@ struct NotificationCardView: View {
     let card: NotificationCard
     let onJump: () -> Void
     let onDismiss: () -> Void
-    var onApprove: (() -> Void)? = nil
-    var onDeny: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -42,61 +40,19 @@ struct NotificationCardView: View {
                 }
             }
 
-            // Permission action buttons
-            if card.event.type == .permissionRequest {
-                HStack(spacing: 10) {
-                    Button(action: { onApprove?() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12))
-                            Text("Allow")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.8))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { onDeny?() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 12))
-                            Text("Deny")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(Color.red.opacity(0.7))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: onJump) {
+            // Single action: Go to Terminal
+            HStack {
+                Spacer()
+                Button(action: onJump) {
+                    HStack(spacing: 4) {
+                        Text("Go to Terminal")
+                            .font(.system(size: 10))
                         Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(PulseColors.textTertiary)
+                            .font(.system(size: 12))
                     }
-                    .buttonStyle(.plain)
+                    .foregroundColor(card.iconColor.opacity(0.8))
                 }
-            } else {
-                // Regular card: jump button
-                HStack {
-                    Spacer()
-                    Button(action: onJump) {
-                        HStack(spacing: 4) {
-                            Text("Go to Terminal")
-                                .font(.system(size: 10))
-                            Image(systemName: "arrow.right.circle.fill")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(card.iconColor.opacity(0.8))
-                    }
-                    .buttonStyle(.plain)
-                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 12)
@@ -105,14 +61,29 @@ struct NotificationCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(
-                    card.event.type == .permissionRequest
-                        ? Color.orange.opacity(0.4)
-                        : PulseColors.cardBorder,
-                    lineWidth: card.event.type == .permissionRequest ? 1 : 0.5
-                )
+                .strokeBorder(borderColor, lineWidth: borderWidth)
         )
         .contentShape(Rectangle())
+    }
+
+    private var borderColor: Color {
+        switch card.event.type {
+        case .permissionRequest:
+            return Color.orange.opacity(0.4)
+        case .testFailed, .buildFailed, .repeatedFailure:
+            return Color.red.opacity(0.4)
+        default:
+            return PulseColors.cardBorder
+        }
+    }
+
+    private var borderWidth: CGFloat {
+        switch card.event.type {
+        case .permissionRequest, .testFailed, .buildFailed, .repeatedFailure:
+            return 1
+        default:
+            return 0.5
+        }
     }
 
     private var displaySummary: String {

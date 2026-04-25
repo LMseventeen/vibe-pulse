@@ -118,6 +118,14 @@ actor PulseStore {
             notificationHistory = Array(notificationHistory.prefix(maxHistory))
         }
 
+        // Skip notification display when user is in the terminal
+        let terminalFocused = await MainActor.run { TerminalFocusHelper.isTerminalFocused() }
+        if terminalFocused {
+            logger.debug("Terminal focused — suppressing notification for \(pulseEvent.type.rawValue, privacy: .public)")
+            publishState()
+            return
+        }
+
         // Enqueue for display (if not silent)
         let card = await notificationQueue.enqueue(pulseEvent)
 
@@ -166,12 +174,18 @@ actor PulseStore {
             return
         }
 
-        // Check if current card's display duration has elapsed
-        if let duration = current.displayDuration {
-            let elapsed = Date().timeIntervalSince(current.event.timestamp)
-            if elapsed > duration {
-                currentCard = nil
-                publishState()
+        // Only auto-expire cards that have an explicit display duration.
+        // Alert-level cards (displayDuration == nil) stay until user dismisses.
+        guard let duration = current.displayDuration else { return }
+
+        let elapsed = Date().timeIntervalSince(current.event.timestamp)
+        if elapsed > duration {
+            currentCard = nil
+            publishState()
+
+            // Close the notch on the main thread
+            await MainActor.run {
+                AppDelegate.shared?.windowController?.viewModel.notchClose()
             }
         }
     }
@@ -269,13 +283,19 @@ actor PulseStore {
     }
 
     private func computeAggregateStatus(sessions: [SessionState]) -> AggregateStatus {
-        guard !sessions.isEmpty else { return .inactive }
-
-        // Check for unacknowledged alert-level notifications
-        let hasUnacknowledgedAlert = notificationHistory.contains {
-            !$0.acknowledged && $0.level == .alert
+        // Current card takes priority for status dot color
+        if let card = currentCard {
+            switch card.event.type {
+            case .permissionRequest:
+                return .waiting   // orange
+            case .testFailed, .buildFailed, .repeatedFailure:
+                return .error     // red
+            default:
+                break  // fall through to session-based logic
+            }
         }
-        if hasUnacknowledgedAlert { return .error }
+
+        guard !sessions.isEmpty else { return .inactive }
 
         // Check session phases
         let hasWaitingForApproval = sessions.contains { $0.phase.isWaitingForApproval }

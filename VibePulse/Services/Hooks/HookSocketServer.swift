@@ -77,19 +77,6 @@ struct HookEvent: Codable, Sendable {
     }
 }
 
-struct HookResponse: Codable {
-    let decision: String
-    let reason: String?
-}
-
-struct PendingPermission: Sendable {
-    let sessionId: String
-    let toolUseId: String
-    let clientSocket: Int32
-    let event: HookEvent
-    let receivedAt: Date
-}
-
 typealias HookEventHandler = @Sendable (HookEvent) -> Void
 
 /// Unix domain socket server for hook events
@@ -101,9 +88,6 @@ class HookSocketServer {
     private var acceptSource: DispatchSourceRead?
     private var eventHandler: HookEventHandler?
     private let queue = DispatchQueue(label: "com.vibepulse.socket", qos: .userInitiated)
-
-    private var pendingPermissions: [String: PendingPermission] = [:]
-    private let permissionsLock = NSLock()
 
     private var toolUseIdCache: [String: [String]] = [:]
     private let cacheLock = NSLock()
@@ -182,20 +166,10 @@ class HookSocketServer {
         acceptSource?.cancel()
         acceptSource = nil
         unlink(Self.socketPath)
-
-        permissionsLock.lock()
-        for (_, pending) in pendingPermissions {
-            close(pending.clientSocket)
-        }
-        pendingPermissions.removeAll()
-        permissionsLock.unlock()
     }
 
-    func respondToPermission(toolUseId: String, decision: String, reason: String? = nil) {
-        queue.async { [weak self] in
-            self?.sendPermissionResponse(toolUseId: toolUseId, decision: decision, reason: reason)
-        }
-    }
+    // Permission responses removed — user handles permissions in terminal.
+    // The hook script will fall through to "ask" behavior (Claude's default prompt).
 
     // MARK: - Tool Use ID Cache
 
@@ -314,60 +288,13 @@ class HookSocketServer {
             cleanupCache(sessionId: event.sessionId)
         }
 
-        if event.expectsResponse {
-            let toolUseId: String
-            if let eventToolUseId = event.toolUseId {
-                toolUseId = eventToolUseId
-            } else if let cachedToolUseId = popCachedToolUseId(event: event) {
-                toolUseId = cachedToolUseId
-            } else {
-                close(clientSocket)
-                eventHandler?(event)
-                return
-            }
-
-            let pending = PendingPermission(
-                sessionId: event.sessionId,
-                toolUseId: toolUseId,
-                clientSocket: clientSocket,
-                event: event,
-                receivedAt: Date()
-            )
-
-            permissionsLock.lock()
-            pendingPermissions[toolUseId] = pending
-            permissionsLock.unlock()
-
-            eventHandler?(event)
-            return
-        } else {
-            close(clientSocket)
-        }
+        // Close the socket immediately — we no longer respond to permission requests
+        // from the UI. The hook script will fall through to default "ask" behavior.
+        close(clientSocket)
 
         eventHandler?(event)
     }
 
-    private func sendPermissionResponse(toolUseId: String, decision: String, reason: String?) {
-        permissionsLock.lock()
-        guard let pending = pendingPermissions.removeValue(forKey: toolUseId) else {
-            permissionsLock.unlock()
-            return
-        }
-        permissionsLock.unlock()
-
-        let response = HookResponse(decision: decision, reason: reason)
-        guard let data = try? JSONEncoder().encode(response) else {
-            close(pending.clientSocket)
-            return
-        }
-
-        data.withUnsafeBytes { bytes in
-            guard let baseAddress = bytes.baseAddress else { return }
-            _ = write(pending.clientSocket, baseAddress, data.count)
-        }
-
-        close(pending.clientSocket)
-    }
 }
 
 // MARK: - AnyCodable

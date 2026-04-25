@@ -305,29 +305,7 @@ struct NotchView: View {
                         Task {
                             await PulseStore.shared.dismissCurrentCard()
                         }
-                    },
-                    onApprove: card.event.type == .permissionRequest ? {
-                        Task {
-                            if let toolUseId = card.event.toolUseId {
-                                HookSocketServer.shared.respondToPermission(
-                                    toolUseId: toolUseId, decision: "allow"
-                                )
-                            }
-                            await PulseStore.shared.dismissCurrentCard()
-                            viewModel.notchClose()
-                        }
-                    } : nil,
-                    onDeny: card.event.type == .permissionRequest ? {
-                        Task {
-                            if let toolUseId = card.event.toolUseId {
-                                HookSocketServer.shared.respondToPermission(
-                                    toolUseId: toolUseId, decision: "deny"
-                                )
-                            }
-                            await PulseStore.shared.dismissCurrentCard()
-                            viewModel.notchClose()
-                        }
-                    } : nil
+                    }
                 )
             } else {
                 // Empty state: show session summary
