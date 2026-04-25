@@ -12,8 +12,6 @@
 
 [English](README.md) | 中文
 
-<img width="600" alt="Vibe Pulse Demo" src="docs/assets/demo.png">
-
 </div>
 
 ---
