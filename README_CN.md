@@ -44,6 +44,12 @@
 
 **Vibe Pulse 替你盯着 Claude Code**，通过 MacBook 刘海区域即时推送通知，让你不错过任何重要事件。
 
+## 目标用户
+
+- 日常使用 Claude Code CLI 进行自动化编码（vibe coding）的开发者
+- 习惯在 Claude Code 运行时切换到浏览器、文档、聊天等其他应用的开发者
+- 使用 MacBook（带刘海屏）的 macOS 用户
+
 ## 核心功能
 
 ### 智能事件检测

@@ -44,6 +44,12 @@ When vibe coding with Claude Code, you're often multitasking — browsing docs, 
 
 **Vibe Pulse watches Claude Code for you** and delivers just-in-time notifications through your MacBook's notch area, so you never miss what matters.
 
+## Who Is This For?
+
+- Developers who use Claude Code CLI for everyday vibe coding
+- Developers who frequently switch to browsers, docs, or chat while Claude Code runs
+- MacBook users (with notch display) on macOS
+
 ## Features
 
 ### Smart Event Detection
