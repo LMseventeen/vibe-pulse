@@ -92,6 +92,11 @@ class HookSocketServer {
     private var toolUseIdCache: [String: [String]] = [:]
     private let cacheLock = NSLock()
 
+    /// Pending permission sockets: toolUseId -> (file descriptor, received time)
+    private var pendingPermissions: [String: (fd: Int32, receivedAt: Date)] = [:]
+    private let permissionLock = NSLock()
+    private static let permissionTimeout: TimeInterval = 290  // Just under Python's 300s
+
     private init() {}
 
     func start(onEvent: @escaping HookEventHandler) {
@@ -165,11 +170,71 @@ class HookSocketServer {
     func stop() {
         acceptSource?.cancel()
         acceptSource = nil
+        closeAllPendingPermissions()
         unlink(Self.socketPath)
     }
 
-    // Permission responses removed — user handles permissions in terminal.
-    // The hook script will fall through to "ask" behavior (Claude's default prompt).
+    // MARK: - Permission Response
+
+    /// Send an allow/deny response back to the hook script for a pending permission request.
+    func sendPermissionResponse(toolUseId: String, decision: String, reason: String = "") {
+        permissionLock.lock()
+        guard let entry = pendingPermissions.removeValue(forKey: toolUseId) else {
+            permissionLock.unlock()
+            logger.warning("No pending permission for toolUseId \(toolUseId.prefix(16), privacy: .public)")
+            return
+        }
+        permissionLock.unlock()
+
+        let response: [String: String] = ["decision": decision, "reason": reason]
+        if let data = try? JSONSerialization.data(withJSONObject: response),
+           let json = String(data: data, encoding: .utf8) {
+            json.withCString { ptr in
+                let len = strlen(ptr)
+                _ = write(entry.fd, ptr, len)
+            }
+            logger.info("Sent \(decision, privacy: .public) for toolUseId \(toolUseId.prefix(16), privacy: .public)")
+        }
+
+        close(entry.fd)
+    }
+
+    private func holdSocketForPermission(toolUseId: String, clientSocket: Int32) {
+        permissionLock.lock()
+        pendingPermissions[toolUseId] = (fd: clientSocket, receivedAt: Date())
+        permissionLock.unlock()
+
+        // Schedule cleanup for stale sockets
+        queue.asyncAfter(deadline: .now() + Self.permissionTimeout) { [weak self] in
+            self?.cleanupStalePermission(toolUseId: toolUseId)
+        }
+    }
+
+    private func cleanupStalePermission(toolUseId: String) {
+        permissionLock.lock()
+        guard let entry = pendingPermissions[toolUseId] else {
+            permissionLock.unlock()
+            return
+        }
+        let age = Date().timeIntervalSince(entry.receivedAt)
+        if age >= Self.permissionTimeout {
+            pendingPermissions.removeValue(forKey: toolUseId)
+            permissionLock.unlock()
+            close(entry.fd)
+            logger.info("Cleaned up stale permission socket for \(toolUseId.prefix(16), privacy: .public)")
+        } else {
+            permissionLock.unlock()
+        }
+    }
+
+    private func closeAllPendingPermissions() {
+        permissionLock.lock()
+        for (_, entry) in pendingPermissions {
+            close(entry.fd)
+        }
+        pendingPermissions.removeAll()
+        permissionLock.unlock()
+    }
 
     // MARK: - Tool Use ID Cache
 
@@ -288,9 +353,13 @@ class HookSocketServer {
             cleanupCache(sessionId: event.sessionId)
         }
 
-        // Close the socket immediately — we no longer respond to permission requests
-        // from the UI. The hook script will fall through to default "ask" behavior.
-        close(clientSocket)
+        // For permission requests, hold the socket open so we can send back allow/deny.
+        // For all other events, close immediately.
+        if event.expectsResponse, let toolUseId = event.toolUseId, !toolUseId.isEmpty {
+            holdSocketForPermission(toolUseId: toolUseId, clientSocket: clientSocket)
+        } else {
+            close(clientSocket)
+        }
 
         eventHandler?(event)
     }

@@ -61,6 +61,11 @@ class NotchPanel: NSPanel {
                 }
                 return
             }
+            // Re-acquire key status on click. Another process (e.g. macOS
+            // screenshot) may have stolen it, leaving buttons unresponsive.
+            if !isKeyWindow {
+                makeKey()
+            }
         }
         super.sendEvent(event)
     }

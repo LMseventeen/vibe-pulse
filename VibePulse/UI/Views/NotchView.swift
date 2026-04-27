@@ -297,15 +297,37 @@ struct NotchView: View {
                             if let session = await PulseStore.shared.getSession(id: card.event.sessionId) {
                                 await TerminalFocusHelper.jumpToTerminal(session: session)
                             }
-                            await PulseStore.shared.dismissCurrentCard()
-                            viewModel.notchClose()
+                            // For permission cards, don't dismiss — user may still
+                            // want to Allow/Deny after checking the terminal.
+                            if card.event.type != .permissionRequest {
+                                await PulseStore.shared.dismissCurrentCard()
+                                await MainActor.run { viewModel.notchClose() }
+                            }
                         }
                     },
                     onDismiss: {
                         Task {
                             await PulseStore.shared.dismissCurrentCard()
                         }
-                    }
+                    },
+                    onAllow: card.event.type == .permissionRequest ? {
+                        Task {
+                            await PulseStore.shared.respondToPermission(
+                                sessionId: card.event.sessionId,
+                                toolUseId: card.event.toolUseId ?? "",
+                                allow: true
+                            )
+                        }
+                    } : nil,
+                    onDeny: card.event.type == .permissionRequest ? {
+                        Task {
+                            await PulseStore.shared.respondToPermission(
+                                sessionId: card.event.sessionId,
+                                toolUseId: card.event.toolUseId ?? "",
+                                allow: false
+                            )
+                        }
+                    } : nil
                 )
             } else {
                 // Empty state: show session summary

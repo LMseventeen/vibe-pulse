@@ -29,8 +29,12 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
             self.displayDuration = 3.0
             self.actions = [.jumpToTerminal]
         case .alert:
-            self.displayDuration = nil  // Persistent until user clicks
-            self.actions = [.jumpToTerminal]
+            self.displayDuration = nil  // Persistent until user acts
+            if event.type == .permissionRequest {
+                self.actions = [.allowPermission, .denyPermission]
+            } else {
+                self.actions = [.jumpToTerminal]
+            }
         }
     }
 
@@ -65,4 +69,6 @@ struct NotificationCard: Identifiable, Equatable, Sendable {
 enum CardAction: Equatable, Sendable {
     case jumpToTerminal
     case dismiss
+    case allowPermission
+    case denyPermission
 }

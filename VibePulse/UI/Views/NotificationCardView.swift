@@ -11,6 +11,12 @@ struct NotificationCardView: View {
     let card: NotificationCard
     let onJump: () -> Void
     let onDismiss: () -> Void
+    var onAllow: (() -> Void)? = nil
+    var onDeny: (() -> Void)? = nil
+
+    private var isPermission: Bool {
+        card.event.type == .permissionRequest
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -40,19 +46,11 @@ struct NotificationCardView: View {
                 }
             }
 
-            // Single action: Go to Terminal
-            HStack {
-                Spacer()
-                Button(action: onJump) {
-                    HStack(spacing: 4) {
-                        Text("Go to Terminal")
-                            .font(.system(size: 10))
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 12))
-                    }
-                    .foregroundColor(card.iconColor.opacity(0.8))
-                }
-                .buttonStyle(.plain)
+            // Actions
+            if isPermission {
+                permissionActions
+            } else {
+                jumpAction
             }
         }
         .padding(.horizontal, 12)
@@ -64,6 +62,56 @@ struct NotificationCardView: View {
                 .strokeBorder(borderColor, lineWidth: borderWidth)
         )
         .contentShape(Rectangle())
+    }
+
+    // MARK: - Action Views
+
+    @ViewBuilder
+    private var jumpAction: some View {
+        HStack {
+            Spacer()
+            Button(action: onJump) {
+                HStack(spacing: 4) {
+                    Text("Go to Terminal")
+                        .font(.system(size: 10))
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(card.iconColor.opacity(0.8))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var permissionActions: some View {
+        HStack(spacing: 8) {
+            Spacer()
+
+            // Deny
+            Button(action: { onDeny?() }) {
+                Text("Deny")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+
+            // Allow
+            Button(action: { onAllow?() }) {
+                Text("Allow")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.7))
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var borderColor: Color {

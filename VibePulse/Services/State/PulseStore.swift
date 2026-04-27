@@ -118,12 +118,16 @@ actor PulseStore {
             notificationHistory = Array(notificationHistory.prefix(maxHistory))
         }
 
-        // Skip notification display when user is in the terminal
-        let terminalFocused = await MainActor.run { TerminalFocusHelper.isTerminalFocused() }
-        if terminalFocused {
-            logger.debug("Terminal focused — suppressing notification for \(pulseEvent.type.rawValue, privacy: .public)")
-            publishState()
-            return
+        // Skip notification display when user is in the terminal —
+        // EXCEPT for permission requests, which the user may want to handle
+        // directly from the notch without switching back to the terminal.
+        if pulseEvent.type != .permissionRequest {
+            let terminalFocused = await MainActor.run { TerminalFocusHelper.isTerminalFocused() }
+            if terminalFocused {
+                logger.debug("Terminal focused — suppressing notification for \(pulseEvent.type.rawValue, privacy: .public)")
+                publishState()
+                return
+            }
         }
 
         // Enqueue for display (if not silent)
@@ -236,6 +240,36 @@ actor PulseStore {
             await cycleNotificationDisplay()
         }
         publishState()
+    }
+
+    /// Respond to a permission request with allow/deny and dismiss the card.
+    func respondToPermission(sessionId: String, toolUseId: String, allow: Bool) {
+        let decision = allow ? "allow" : "deny"
+        let reason = allow ? "" : "Denied by user via VibePulse"
+
+        HookSocketServer.shared.sendPermissionResponse(
+            toolUseId: toolUseId,
+            decision: decision,
+            reason: reason
+        )
+
+        // Transition session phase
+        if var session = sessions[sessionId] {
+            let newPhase: SessionPhase = allow ? .processing : .idle
+            if session.phase.canTransition(to: newPhase) {
+                session.phase = newPhase
+                sessions[sessionId] = session
+            }
+        }
+
+        dismissCurrentCard()
+
+        // Close the notch
+        Task { @MainActor in
+            AppDelegate.shared?.windowController?.viewModel.notchClose()
+        }
+
+        logger.info("Permission \(decision, privacy: .public) for session \(sessionId.prefix(8), privacy: .public)")
     }
 
     func dequeueNextCard() async -> NotificationCard? {
