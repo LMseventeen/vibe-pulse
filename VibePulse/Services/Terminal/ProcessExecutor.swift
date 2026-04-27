@@ -27,7 +27,7 @@ enum ProcessExecutorError: Error, LocalizedError {
 }
 
 actor ProcessExecutor {
-    nonisolated(unsafe) static let shared = ProcessExecutor()
+    nonisolated static let shared = ProcessExecutor()
     nonisolated static let logger = Logger(subsystem: "com.vibepulse", category: "ProcessExecutor")
 
     private init() {}
