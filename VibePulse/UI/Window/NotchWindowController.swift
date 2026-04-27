@@ -61,9 +61,11 @@ class NotchWindowController: NSWindowController {
                 switch status {
                 case .opened:
                     notchWindow?.ignoresMouseEvents = false
+                    // Always make key so buttons receive clicks — even for
+                    // notification-triggered opens on multi-monitor setups.
+                    notchWindow?.makeKey()
                     if viewModel?.openReason != .notification {
                         NSApp.activate(ignoringOtherApps: false)
-                        notchWindow?.makeKey()
                     }
                 case .closed, .popping:
                     notchWindow?.ignoresMouseEvents = true

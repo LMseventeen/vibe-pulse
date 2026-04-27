@@ -66,8 +66,10 @@ class NotchPanel: NSPanel {
     }
 
     private func repostMouseEvent(_ event: NSEvent, at screenLocation: NSPoint) {
-        guard let screen = NSScreen.main else { return }
-        let screenHeight = screen.frame.height
+        // Use the total virtual screen height for coordinate conversion, not NSScreen.main
+        // which can be the wrong screen in multi-monitor setups.
+        let screenHeight = NSScreen.screens.map { $0.frame.maxY }.max() ?? NSScreen.main?.frame.height ?? 0
+        guard screenHeight > 0 else { return }
         let cgPoint = CGPoint(x: screenLocation.x, y: screenHeight - screenLocation.y)
 
         let mouseType: CGEventType
