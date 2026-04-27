@@ -118,16 +118,17 @@ actor PulseStore {
             notificationHistory = Array(notificationHistory.prefix(maxHistory))
         }
 
-        // Skip notification display when user is in the terminal —
-        // EXCEPT for permission requests, which the user may want to handle
-        // directly from the notch without switching back to the terminal.
-        if pulseEvent.type != .permissionRequest {
-            let terminalFocused = await MainActor.run { TerminalFocusHelper.isTerminalFocused() }
-            if terminalFocused {
-                logger.debug("Terminal focused — suppressing notification for \(pulseEvent.type.rawValue, privacy: .public)")
-                publishState()
-                return
+        // Skip notification display when user is in the terminal
+        let terminalFocused = await MainActor.run { TerminalFocusHelper.isTerminalFocused() }
+        if terminalFocused {
+            // For permission requests, close the held socket so the hook script
+            // falls through to Claude Code's default terminal prompt.
+            if pulseEvent.type == .permissionRequest, let toolUseId = pulseEvent.toolUseId {
+                HookSocketServer.shared.closePendingPermission(toolUseId: toolUseId)
             }
+            logger.debug("Terminal focused — suppressing notification for \(pulseEvent.type.rawValue, privacy: .public)")
+            publishState()
+            return
         }
 
         // Enqueue for display (if not silent)
