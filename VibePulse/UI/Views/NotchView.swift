@@ -297,12 +297,8 @@ struct NotchView: View {
                             if let session = await PulseStore.shared.getSession(id: card.event.sessionId) {
                                 await TerminalFocusHelper.jumpToTerminal(session: session)
                             }
-                            // For permission cards, don't dismiss — user may still
-                            // want to Allow/Deny after checking the terminal.
-                            if card.event.type != .permissionRequest {
-                                await PulseStore.shared.dismissCurrentCard()
-                                await MainActor.run { viewModel.notchClose() }
-                            }
+                            await PulseStore.shared.dismissCurrentCard()
+                            await MainActor.run { viewModel.notchClose() }
                         }
                     },
                     onDismiss: {

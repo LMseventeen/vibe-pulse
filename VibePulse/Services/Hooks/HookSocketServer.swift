@@ -199,6 +199,19 @@ class HookSocketServer {
         close(entry.fd)
     }
 
+    /// Close a pending permission socket without sending a response.
+    /// The hook script will get an empty recv and fall through to terminal behavior.
+    func closePendingPermission(toolUseId: String) {
+        permissionLock.lock()
+        guard let entry = pendingPermissions.removeValue(forKey: toolUseId) else {
+            permissionLock.unlock()
+            return
+        }
+        permissionLock.unlock()
+        close(entry.fd)
+        logger.info("Closed pending permission (suppressed) for \(toolUseId.prefix(16), privacy: .public)")
+    }
+
     private func holdSocketForPermission(toolUseId: String, clientSocket: Int32) {
         permissionLock.lock()
         pendingPermissions[toolUseId] = (fd: clientSocket, receivedAt: Date())

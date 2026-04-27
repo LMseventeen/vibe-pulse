@@ -86,8 +86,6 @@ struct NotificationCardView: View {
     @ViewBuilder
     private var permissionActions: some View {
         HStack(spacing: 8) {
-            Spacer()
-
             // Deny
             Button(action: { onDeny?() }) {
                 Text("Deny")
@@ -109,6 +107,20 @@ struct NotificationCardView: View {
                     .padding(.vertical, 4)
                     .background(Color.green.opacity(0.7))
                     .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            // Go to Terminal
+            Button(action: onJump) {
+                HStack(spacing: 4) {
+                    Text("Go to Terminal")
+                        .font(.system(size: 10))
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(card.iconColor.opacity(0.8))
             }
             .buttonStyle(.plain)
         }
