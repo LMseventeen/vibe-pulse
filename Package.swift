@@ -11,7 +11,10 @@ let package = Package(
         .executableTarget(
             name: "VibePulse",
             path: "VibePulse",
-            exclude: ["Resources/claude-pulse-hook.py"],
+            exclude: [
+                "Resources/claude-pulse-hook.py",
+                "VibePulse.entitlements"
+            ],
             resources: [
                 .copy("Resources/Assets.xcassets")
             ]
