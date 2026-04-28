@@ -127,13 +127,11 @@ struct NotificationCardView: View {
     }
 
     private var borderColor: Color {
-        card.event.type == .permissionRequest
-            ? Color.orange.opacity(0.4)
-            : PulseColors.cardBorder
+        PulseColors.cardBorder
     }
 
     private var borderWidth: CGFloat {
-        card.event.type == .permissionRequest ? 1 : 0.5
+        0.5
     }
 
     private var displaySummary: String {
