@@ -22,6 +22,7 @@ struct StatusIndicatorView: View {
             if shouldAnimate {
                 PulseAnimation(color: dotColor, isAnimating: true)
                     .frame(width: size * 2.5, height: size * 2.5)
+                    .tag(status)  // Force recreation when status changes so color updates
             }
 
             // Solid dot
