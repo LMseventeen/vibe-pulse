@@ -92,8 +92,8 @@ class HookSocketServer {
     private var toolUseIdCache: [String: [String]] = [:]
     private let cacheLock = NSLock()
 
-    /// Pending permission sockets: toolUseId -> (file descriptor, received time)
-    private var pendingPermissions: [String: (fd: Int32, receivedAt: Date)] = [:]
+    /// Pending permission sockets: toolUseId -> (fd, receivedAt, cleanupWorkItem)
+    private var pendingPermissions: [String: (fd: Int32, receivedAt: Date, cleanupWorkItem: DispatchWorkItem?)] = [:]
     private let permissionLock = NSLock()
     private static let permissionTimeout: TimeInterval = 290  // Just under Python's 300s
 
@@ -184,6 +184,7 @@ class HookSocketServer {
             logger.warning("No pending permission for toolUseId \(toolUseId.prefix(16), privacy: .public)")
             return
         }
+        entry.cleanupWorkItem?.cancel()
         permissionLock.unlock()
 
         let response: [String: String] = ["decision": decision, "reason": reason]
@@ -207,20 +208,23 @@ class HookSocketServer {
             permissionLock.unlock()
             return
         }
+        entry.cleanupWorkItem?.cancel()
         permissionLock.unlock()
         close(entry.fd)
         logger.info("Closed pending permission (suppressed) for \(toolUseId.prefix(16), privacy: .public)")
     }
 
     private func holdSocketForPermission(toolUseId: String, clientSocket: Int32) {
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.cleanupStalePermission(toolUseId: toolUseId)
+        }
+
         permissionLock.lock()
-        pendingPermissions[toolUseId] = (fd: clientSocket, receivedAt: Date())
+        pendingPermissions[toolUseId] = (fd: clientSocket, receivedAt: Date(), cleanupWorkItem: workItem)
         permissionLock.unlock()
 
         // Schedule cleanup for stale sockets
-        queue.asyncAfter(deadline: .now() + Self.permissionTimeout) { [weak self] in
-            self?.cleanupStalePermission(toolUseId: toolUseId)
-        }
+        queue.asyncAfter(deadline: .now() + Self.permissionTimeout, execute: workItem)
     }
 
     private func cleanupStalePermission(toolUseId: String) {
@@ -243,6 +247,7 @@ class HookSocketServer {
     private func closeAllPendingPermissions() {
         permissionLock.lock()
         for (_, entry) in pendingPermissions {
+            entry.cleanupWorkItem?.cancel()
             close(entry.fd)
         }
         pendingPermissions.removeAll()
