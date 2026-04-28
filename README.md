@@ -28,7 +28,8 @@ English | [中文](README_CN.md)
     <td align="center"><img src="static/png/5.png" width="280" /><br /><b>Task Completed</b><br />Green card — auto-closes in 3 seconds</td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><img src="static/png/2.png" width="280" /><br /><b>Notification Timeline</b><br />Click the notch to browse recent events</td>
+    <td align="center"><img src="static/png/6.png" width="280" /><br /><b>Permission Card — Allow / Deny</b><br />Respond to permission requests directly from the notch without switching to the terminal</td>
+    <td align="center"><img src="static/png/2.png" width="280" /><br /><b>Notification Timeline</b><br />Click the notch to browse recent events</td>
   </tr>
 </table>
 
