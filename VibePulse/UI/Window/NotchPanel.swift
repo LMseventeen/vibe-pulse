@@ -54,28 +54,33 @@ class NotchPanel: NSPanel {
             let locationInWindow = event.locationInWindow
             if let contentView = self.contentView,
                contentView.hitTest(locationInWindow) == nil {
+                // Click in transparent area — pass through to the system.
+                // Resign key first so we don't intercept the reposted event,
+                // then restore key after so buttons keep working.
+                let wasKey = isKeyWindow
+                if wasKey {
+                    resignKey()
+                }
                 let screenLocation = convertPoint(toScreen: locationInWindow)
-                ignoresMouseEvents = true
-                DispatchQueue.main.async { [weak self] in
-                    self?.repostMouseEvent(event, at: screenLocation)
+                repostMouseEvent(event, at: screenLocation)
+                if wasKey {
+                    // Defer makeKey so the system has a chance to deliver the
+                    // event to the target (e.g. menu bar) before we reclaim focus.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.makeKey()
+                    }
                 }
                 return
-            }
-            // Re-acquire key status on click. Another process (e.g. macOS
-            // screenshot) may have stolen it, leaving buttons unresponsive.
-            if !isKeyWindow {
-                makeKey()
             }
         }
         super.sendEvent(event)
     }
 
     private func repostMouseEvent(_ event: NSEvent, at screenLocation: NSPoint) {
-        // Use the total virtual screen height for coordinate conversion, not NSScreen.main
-        // which can be the wrong screen in multi-monitor setups.
-        let screenHeight = NSScreen.screens.map { $0.frame.maxY }.max() ?? NSScreen.main?.frame.height ?? 0
-        guard screenHeight > 0 else { return }
-        let cgPoint = CGPoint(x: screenLocation.x, y: screenHeight - screenLocation.y)
+        // Convert NSScreen coords (bottom-left origin) to CG coords (top-left origin).
+        // Use the panel's screen frame, not a global max, so multi-monitor
+        // arrangements with different origins are handled correctly.
+        let cgPoint = CGPoint(x: screenLocation.x, y: (self.screen?.frame.maxY ?? 0) - screenLocation.y)
 
         let mouseType: CGEventType
         switch event.type {
